@@ -1,0 +1,9 @@
+.idea/
+/testdata/config_unmarshal.go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
