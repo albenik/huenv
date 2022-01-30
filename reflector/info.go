@@ -4,20 +4,27 @@ import (
 	"github.com/albenik/huenv/unmarshal"
 )
 
-type TargetInfo struct {
-	Target    *Target
-	Condition interface{}
+type Result struct {
+	ConfigPkg  string
+	ConfigType string
+	Packages   map[string]struct{}
+	Envs       map[string]*Target
 }
 
 type Target struct {
-	Field       string
+	Field     *TargetField
+	Condition interface{}
+}
+
+type TargetField struct {
+	Name        string
 	Unmarshaler unmarshal.UnmarshalerName
 }
 
 type ConditionRequired bool
 
 type ConditionRequireIf struct {
-	Target   *Target
+	Target   *TargetField
 	ValueStr string
 }
 

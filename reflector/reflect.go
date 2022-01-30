@@ -13,24 +13,17 @@ const (
 	unmarshalerTagName = "unmarshaler"
 )
 
-type Result struct {
-	ConfigPkg  string
-	ConfigType string
-	Packages   map[string]struct{}
-	Envs       map[string]*TargetInfo
-}
-
 type Reflector struct {
 	pkgs   map[string]struct{}
-	envs   map[string]*TargetInfo
-	fields map[string]*Target
+	envs   map[string]*Target
+	fields map[string]*TargetField
 }
 
 func New() *Reflector {
 	return &Reflector{
 		pkgs:   make(map[string]struct{}),
-		envs:   make(map[string]*TargetInfo),
-		fields: make(map[string]*Target),
+		envs:   make(map[string]*Target),
+		fields: make(map[string]*TargetField),
 	}
 }
 
@@ -41,8 +34,9 @@ func (r *Reflector) Reflect(conf interface{}) (*Result, error) {
 	}
 
 	ts := t.Elem()
+	vs := reflect.ValueOf(conf).Elem()
 
-	if err := r.processStruct(ts, "", "", nil); err != nil {
+	if err := r.processStruct(ts, &vs, "", "", nil); err != nil {
 		return nil, err
 	}
 
@@ -55,10 +49,15 @@ func (r *Reflector) Reflect(conf interface{}) (*Result, error) {
 	}, nil
 }
 
-func (r *Reflector) processStruct(typ reflect.Type, envPrefix, fieldPrefix string, parentCond *ConditionRequireIf) error {
-	typ.String()
+func (r *Reflector) processStruct(
+	typ reflect.Type,
+	val *reflect.Value,
+	envPrefix, fieldPrefix string,
+	parentCond *ConditionRequireIf,
+) error {
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
+		fvalue := val.Field(i)
 
 		longFieldName := field.Name
 		if fieldPrefix != "" {
@@ -68,7 +67,7 @@ func (r *Reflector) processStruct(typ reflect.Type, envPrefix, fieldPrefix strin
 		uname, hasUnmarshaler := findUnmarshalerNameForField(&field)
 
 		if !hasUnmarshaler {
-			if processed, err := r.tryProcessSublevel(&field, longFieldName, envPrefix); err != nil {
+			if processed, err := r.tryProcessSublevel(&field, &fvalue, longFieldName, envPrefix, parentCond); err != nil {
 				return newFieldError(longFieldName, err)
 			} else if processed {
 				continue
@@ -98,9 +97,9 @@ func (r *Reflector) processStruct(typ reflect.Type, envPrefix, fieldPrefix strin
 			return newFieldError(longFieldName, fmt.Errorf("environment variable name %q already used", envName))
 		}
 
-		info := &TargetInfo{
-			Target: &Target{
-				Field:       longFieldName,
+		info := &Target{
+			Field: &TargetField{
+				Name:        longFieldName,
 				Unmarshaler: uname,
 			},
 			Condition: combineConditions(parentCond, cond),
@@ -108,14 +107,19 @@ func (r *Reflector) processStruct(typ reflect.Type, envPrefix, fieldPrefix strin
 
 		r.pkgs[uname.Package] = struct{}{}
 		r.envs[envName] = info
-		r.fields[longFieldName] = info.Target
+		r.fields[longFieldName] = info.Field
 	}
 
 	return nil
 }
 
-func (r *Reflector) tryProcessSublevel(field *reflect.StructField, longFieldName, envPrefix string) (bool, error) {
-	t := dereference(field.Type)
+func (r *Reflector) tryProcessSublevel(
+	field *reflect.StructField,
+	fval *reflect.Value,
+	longFieldName, envPrefix string,
+	parentCond *ConditionRequireIf,
+) (bool, error) {
+	t := dereferenceT(field.Type)
 	if t.Kind() != reflect.Struct || field.Tag.Get(unmarshalerTagName) != "" {
 		return false, nil
 	}
@@ -139,7 +143,15 @@ func (r *Reflector) tryProcessSublevel(field *reflect.StructField, longFieldName
 		condition, _ = c.(*ConditionRequireIf) // this is expected behaviour: specific type or nil
 	}
 
-	if err := r.processStruct(t, envPrefix, longFieldName, condition); err != nil {
+	if condition == nil {
+		condition = parentCond
+	}
+
+	if field.Type.Kind() == reflect.Ptr {
+		fval.Set(newValueOfType(field.Type))
+	}
+
+	if err := r.processStruct(t, dereferenceV(fval), envPrefix, longFieldName, condition); err != nil {
 		return false, err
 	}
 
@@ -174,18 +186,6 @@ func (r *Reflector) constructCondition(fname string, cond interface{}) (interfac
 	}
 }
 
-func findUnmarshalerNameForField(field *reflect.StructField) (unmarshal.UnmarshalerName, bool) {
-	if explicit := field.Tag.Get(unmarshalerTagName); explicit != "" {
-		parts := strings.SplitN(explicit, " ", 2)
-		if len(parts) == 2 {
-			return unmarshal.UnmarshalerName{Package: parts[0], Type: parts[1]}, true
-		}
-		return unmarshal.UnmarshalerName{Package: field.Type.PkgPath(), Type: parts[0]}, true
-	}
-
-	return registry.FindUnmarshalerNameForType(field.Type)
-}
-
 func combineConditions(parent *ConditionRequireIf, current interface{}) interface{} {
 	if parent == nil {
 		return current
@@ -211,11 +211,16 @@ func combineConditions(parent *ConditionRequireIf, current interface{}) interfac
 	panic(fmt.Errorf("unknown condition %T", current))
 }
 
-func dereference(t reflect.Type) reflect.Type {
-	if t.Kind() == reflect.Ptr {
-		return t.Elem()
+func findUnmarshalerNameForField(field *reflect.StructField) (unmarshal.UnmarshalerName, bool) {
+	if explicit := field.Tag.Get(unmarshalerTagName); explicit != "" {
+		parts := strings.SplitN(explicit, " ", 2)
+		if len(parts) == 2 {
+			return unmarshal.UnmarshalerName{Package: parts[0], Type: parts[1]}, true
+		}
+		return unmarshal.UnmarshalerName{Package: field.Type.PkgPath(), Type: parts[0]}, true
 	}
-	return t
+
+	return registry.FindUnmarshalerNameForType(field.Type)
 }
 
 func parseTypeName(t reflect.Type) (string, string) {
@@ -224,4 +229,29 @@ func parseTypeName(t reflect.Type) (string, string) {
 		return name[:i], name[i+1:]
 	}
 	panic(fmt.Errorf("strange type name: %q", name))
+}
+
+func dereferenceT(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Ptr {
+		return t.Elem()
+	}
+	return t
+}
+
+func dereferenceV(v *reflect.Value) *reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		v := v.Elem()
+		return &v
+	}
+	return v
+}
+
+func newValueOfType(t reflect.Type) reflect.Value {
+	var v reflect.Value
+	if t.Kind() == reflect.Ptr {
+		v = reflect.New(t.Elem())
+	} else {
+		v = reflect.Zero(t)
+	}
+	return v
 }

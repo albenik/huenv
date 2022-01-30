@@ -13,17 +13,22 @@ import (
 	"github.com/albenik/huenv/unmarshal"
 )
 
-var _ huenv.Config = (*testConfig)(nil)
+var _ huenv.Config = (*TestConfig)(nil)
 
-type testConfig struct {
-	Bool           bool   `env:"ENV_BOOL"`
-	BoolOpt        bool   `env:"ENV_BOOL_OPT,optional"`
-	String         string `env:"ENV_STRING"`
-	StringEnum     string `env:"ENV_STRING_ENUM,enum(foo,bar,baz)"`
-	StringOptional string `env:"ENV_STRING_OPT,optional"`
+type TestConfig struct {
+	Bool           bool          `env:"ENV_BOOL"`
+	BoolOpt        bool          `env:"ENV_BOOL_OPT,optional"`
+	String         string        `env:"ENV_STRING"`
+	StringEnum     string        `env:"ENV_STRING_ENUM,enum(foo,bar,baz)"`
+	StringOptional string        `env:"ENV_STRING_OPT,optional"`
+	L2             *TestConfigL2 `env:"L2_*"`
 }
 
-func (c *testConfig) Envmap() map[string]*unmarshal.Target {
+type TestConfigL2 struct {
+	IntField int64 `env:"INT"`
+}
+
+func (c *TestConfig) Envmap() map[string]*unmarshal.Target {
 	to := unmarshal.NewTarget
 
 	return map[string]*unmarshal.Target{
@@ -32,6 +37,7 @@ func (c *testConfig) Envmap() map[string]*unmarshal.Target {
 		"ENV_STRING":      to(&c.String, new(unmarshal.String), unmarshal.Required()),
 		"ENV_STRING_ENUM": to(&c.StringEnum, new(unmarshal.String), unmarshal.Enum("foo", "bar")),
 		"ENV_STRING_OPT":  to(&c.StringOptional, new(unmarshal.String), unmarshal.Optional()),
+		"L2_INT":          to(&c.L2.IntField, new(unmarshal.Int64), unmarshal.Required()),
 	}
 }
 
@@ -40,17 +46,21 @@ func TestEnvconfig_Init(t *testing.T) {
 		t.Setenv("ENV_BOOL", "true")
 		t.Setenv("ENV_STRING", "foo")
 		t.Setenv("ENV_STRING_ENUM", "bar")
+		t.Setenv("L2_INT", "777")
 
-		conf := new(testConfig)
+		conf := new(TestConfig)
 		err := huenv.Init(conf, "")
 
 		require.NoError(t, err)
-		assert.Equal(t, &testConfig{
+		assert.Equal(t, &TestConfig{
 			Bool:           true,
 			BoolOpt:        false,
 			String:         "foo",
 			StringEnum:     "bar",
 			StringOptional: "",
+			L2: &TestConfigL2{
+				IntField: 777,
+			},
 		}, conf)
 	})
 

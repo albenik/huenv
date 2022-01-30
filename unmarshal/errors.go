@@ -5,8 +5,6 @@ import (
 )
 
 var (
-	ErrEnvNotSet      = errors.New("environment variable not set or empty")
-	ErrInvalidOptions = errors.New("invalid options")
-	ErrTypeMismatch   = errors.New("value type mismatch")
-	ErrOverflow       = errors.New("value overflow")
+	ErrEnvNotSet    = errors.New("variable not set or empty")
+	ErrTypeMismatch = errors.New("value type mismatch")
 )

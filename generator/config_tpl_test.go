@@ -25,12 +25,14 @@ var _to = _u.NewTarget
 
 func (c *TestConfig) Envmap() map[string]*_u.Target {
 	return map[string]*_u.Target{
+		"ENV_ZZZ":              _to(&c.Foo.Bar.Baz, new(_u.String), _u.Required()),
+		"ENV_AAA":              _to(&c.Foo.Aaa, new(_u.String), _u.RequireIf(&c.Foo.Bar.Baz, "zzz", new(_u.String))),
 		"ENV_BOOL":             _to(&c.Bool, new(_u.Bool), _u.Required()),
 		"ENV_BOOL_DEP_B":       _to(&c.BoolDepB, new(_u.Bool), _u.RequireIf(&c.Bool, "true", new(_u.Bool))),
+		"ENV_STRING":           _to(&c.String, new(_u.String), _u.Required()),
 		"ENV_BOOL_DEP_S":       _to(&c.BoolDepS, new(_u.Bool), _u.RequireIf(&c.String, "foo", new(_u.String))),
 		"ENV_BOOL_OPT":         _to(&c.BoolOpt, new(_u.Bool), _u.Optional()),
 		"ENV_CCC":              _to(&c.Ccc, new(_u.String), _u.RequireIf(&c.String, "foo", new(_u.String)).And(_u.Enum("foo", "bar", "baz"))),
-		"ENV_STRING":           _to(&c.String, new(_u.String), _u.Required()),
 		"ENV_VERY_LOOOOOOOONG": _to(&c.URL, new(_u.URL), _u.Required()),
 	}
 }
@@ -50,10 +52,10 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 		Packages: map[string]struct{}{
 			"github.com/albenik/huenv/unmarshal": {},
 		},
-		Envs: map[string]*reflector.TargetInfo{
+		Envs: map[string]*reflector.Target{
 			"ENV_BOOL": {
-				Target: &reflector.Target{
-					Field: "Bool",
+				Field: &reflector.TargetField{
+					Name: "Bool",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    boolUnmarshaler,
@@ -62,8 +64,8 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				Condition: reflector.ConditionRequired(true),
 			},
 			"ENV_BOOL_OPT": {
-				Target: &reflector.Target{
-					Field: "BoolOpt",
+				Field: &reflector.TargetField{
+					Name: "BoolOpt",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    boolUnmarshaler,
@@ -72,16 +74,16 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				Condition: reflector.ConditionRequired(false),
 			},
 			"ENV_BOOL_DEP_B": {
-				Target: &reflector.Target{
-					Field: "BoolDepB",
+				Field: &reflector.TargetField{
+					Name: "BoolDepB",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    boolUnmarshaler,
 					},
 				},
 				Condition: &reflector.ConditionRequireIf{
-					Target: &reflector.Target{
-						Field: "Bool",
+					Target: &reflector.TargetField{
+						Name: "Bool",
 						Unmarshaler: unmarshal.UnmarshalerName{
 							Package: pkg,
 							Type:    boolUnmarshaler,
@@ -91,16 +93,16 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				},
 			},
 			"ENV_BOOL_DEP_S": {
-				Target: &reflector.Target{
-					Field: "BoolDepS",
+				Field: &reflector.TargetField{
+					Name: "BoolDepS",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    boolUnmarshaler,
 					},
 				},
 				Condition: &reflector.ConditionRequireIf{
-					Target: &reflector.Target{
-						Field: "String",
+					Target: &reflector.TargetField{
+						Name: "String",
 						Unmarshaler: unmarshal.UnmarshalerName{
 							Package: pkg,
 							Type:    stringUnmarshaler,
@@ -110,8 +112,8 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				},
 			},
 			"ENV_STRING": {
-				Target: &reflector.Target{
-					Field: "String",
+				Field: &reflector.TargetField{
+					Name: "String",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    stringUnmarshaler,
@@ -120,8 +122,8 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				Condition: reflector.ConditionRequired(true),
 			},
 			"ENV_CCC": {
-				Target: &reflector.Target{
-					Field: "Ccc",
+				Field: &reflector.TargetField{
+					Name: "Ccc",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    stringUnmarshaler,
@@ -129,8 +131,8 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				},
 				Condition: &reflector.ConditionRequireIfCombined{
 					First: &reflector.ConditionRequireIf{
-						Target: &reflector.Target{
-							Field: "String",
+						Target: &reflector.TargetField{
+							Name: "String",
 							Unmarshaler: unmarshal.UnmarshalerName{
 								Package: pkg,
 								Type:    stringUnmarshaler,
@@ -142,11 +144,40 @@ func (c *TestConfig) Envmap() map[string]*_u.Target {
 				},
 			},
 			"ENV_VERY_LOOOOOOOONG": {
-				Target: &reflector.Target{
-					Field: "URL",
+				Field: &reflector.TargetField{
+					Name: "URL",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkg,
 						Type:    urlUnmarshaler,
+					},
+				},
+				Condition: reflector.ConditionRequired(true),
+			},
+			"ENV_AAA": {
+				Field: &reflector.TargetField{
+					Name: "Foo.Aaa",
+					Unmarshaler: unmarshal.UnmarshalerName{
+						Package: pkg,
+						Type:    stringUnmarshaler,
+					},
+				},
+				Condition: &reflector.ConditionRequireIf{
+					Target: &reflector.TargetField{
+						Name: "Foo.Bar.Baz",
+						Unmarshaler: unmarshal.UnmarshalerName{
+							Package: pkg,
+							Type:    stringUnmarshaler,
+						},
+					},
+					ValueStr: "zzz",
+				},
+			},
+			"ENV_ZZZ": {
+				Field: &reflector.TargetField{
+					Name: "Foo.Bar.Baz",
+					Unmarshaler: unmarshal.UnmarshalerName{
+						Package: pkg,
+						Type:    stringUnmarshaler,
 					},
 				},
 				Condition: reflector.ConditionRequired(true),

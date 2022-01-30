@@ -7,24 +7,38 @@ import (
 )
 
 var (
-	_ Condition = ConditionRequired(false)
-	_ Condition = (*ConditionRequireIf)(nil)
-	_ Condition = (ConditionEnum)(nil)
+	_ Condition = conditionRequired(false)
+	_ Condition = (*conditionRequireIf)(nil)
+	_ Condition = (conditionEnum)(nil)
 )
 
 type Condition interface {
 	Validate(string) error
 }
 
-func Required() ConditionRequired {
-	return true
+type MultiCondition interface {
+	Condition
+	And(Condition) Condition
 }
 
-func Optional() ConditionRequired {
-	return false
+func Required() Condition {
+	return conditionRequired(true)
 }
 
-func RequireIf(target interface{}, val string, u Unmarshaler) *ConditionRequireIf {
+func Optional() Condition {
+	return conditionRequired(false)
+}
+
+type conditionRequired bool
+
+func (c conditionRequired) Validate(s string) error {
+	if s != "" || !c {
+		return nil
+	}
+	return ErrEnvNotSet
+}
+
+func RequireIf(target interface{}, val string, u Unmarshaler) MultiCondition {
 	if val == "" {
 		panic("reqif: empty value")
 	}
@@ -43,49 +57,39 @@ func RequireIf(target interface{}, val string, u Unmarshaler) *ConditionRequireI
 		panic(err)
 	}
 
-	return &ConditionRequireIf{
+	return &conditionRequireIf{
 		target:      target,
 		value:       v.Elem().Interface(),
 		unmarshaler: u,
 	}
 }
 
-func Enum(s ...string) Condition {
-	return ConditionEnum(s)
-}
-
-type ConditionRequired bool
-
-func (c ConditionRequired) Validate(s string) error {
-	if s != "" || !c {
-		return nil
-	}
-	return ErrEnvNotSet
-}
-
-type ConditionRequireIf struct {
+type conditionRequireIf struct {
 	target      interface{}
 	value       interface{}
 	unmarshaler Unmarshaler
 	second      Condition
 }
 
-func (c *ConditionRequireIf) Validate(s string) error {
-	if s != "" || !c.required() {
+func (c *conditionRequireIf) Validate(s string) error {
+	if c.required() {
 		if c.second != nil {
 			return c.second.Validate(s)
 		}
-		return nil
+		// only check if no second condition
+		if s == "" {
+			return ErrEnvNotSet
+		}
 	}
-	return ErrEnvNotSet
+	return nil
 }
 
-func (c *ConditionRequireIf) And(cond Condition) *ConditionRequireIf {
+func (c *conditionRequireIf) And(cond Condition) Condition {
 	c.second = cond
 	return c
 }
 
-func (c *ConditionRequireIf) required() bool {
+func (c *conditionRequireIf) required() bool {
 	actual := c.normalize(reflect.ValueOf(c.target).Elem().Interface())
 	expected := c.normalize(c.value)
 
@@ -120,7 +124,7 @@ func (c *ConditionRequireIf) required() bool {
 	return false
 }
 
-func (*ConditionRequireIf) normalize(v interface{}) interface{} {
+func (*conditionRequireIf) normalize(v interface{}) interface{} {
 	switch vv := v.(type) {
 	case int:
 		return int64(vv)
@@ -145,9 +149,17 @@ func (*ConditionRequireIf) normalize(v interface{}) interface{} {
 	}
 }
 
-type ConditionEnum []string
+func Enum(s ...string) Condition {
+	return conditionEnum(s)
+}
 
-func (c ConditionEnum) Validate(s string) error {
+type conditionEnum []string
+
+func (c conditionEnum) Validate(s string) error {
+	if s == "" {
+		return fmt.Errorf("one of [%s] required", strings.Join(c, ","))
+	}
+
 	for _, v := range c {
 		if s == v {
 			return nil

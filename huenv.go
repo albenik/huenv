@@ -26,24 +26,25 @@ func Init(conf interface{}, envprefix string) error {
 		return fmt.Errorf("reflect: %w", err)
 	}
 
-	envmap := envconf.Envmap()
-	for name := range info.Envs {
-		if _, ok = envmap[name]; !ok {
+	envs := envconf.Envmap()
+	envKeys := make(sort.StringSlice, 0, len(envs))
+	for k := range envs {
+		envKeys = append(envKeys, k)
+	}
+
+	envKeys.Sort()
+	envKeys = reflector.SortWithDeps(envKeys, info.Envs)
+
+	for _, k := range envKeys {
+		if _, ok = envs[k]; !ok {
 			return ErrOutdated
 		}
 	}
 
-	keys := make(sort.StringSlice, 0, len(envmap))
-	for k := range envmap {
-		keys = append(keys, k)
-	}
-	keys.Sort()
-
 	var outerr error
-
-	for _, key := range keys {
-		if err = envmap[key].Unmarshal(os.Getenv(envprefix + key)); err != nil {
-			outerr = multierr.Append(outerr, &KeyError{key, err})
+	for _, k := range envKeys {
+		if err = envs[k].Unmarshal(os.Getenv(envprefix + k)); err != nil {
+			outerr = multierr.Append(outerr, &KeyError{k, err})
 		}
 	}
 

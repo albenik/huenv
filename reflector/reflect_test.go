@@ -49,10 +49,10 @@ func TestReflector_Reflect(t *testing.T) {
 			pkgUnmarshal: {},
 			pkgTest:      {},
 		},
-		Envs: map[string]*reflector.TargetInfo{
+		Envs: map[string]*reflector.Target{
 			"FIELD1": {
-				Target: &reflector.Target{
-					Field: "Field1",
+				Field: &reflector.TargetField{
+					Name: "Field1",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    stringUnmarshaler,
@@ -61,8 +61,8 @@ func TestReflector_Reflect(t *testing.T) {
 				Condition: reflector.ConditionRequired(true),
 			},
 			"FIELD2": {
-				Target: &reflector.Target{
-					Field: "Field2",
+				Field: &reflector.TargetField{
+					Name: "Field2",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    boolUnmarshaler,
@@ -71,16 +71,16 @@ func TestReflector_Reflect(t *testing.T) {
 				Condition: reflector.ConditionRequired(false),
 			},
 			"FIELD3": {
-				Target: &reflector.Target{
-					Field: "Field3",
+				Field: &reflector.TargetField{
+					Name: "Field3",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    intUnmarshaler,
 					},
 				},
 				Condition: &reflector.ConditionRequireIf{
-					Target: &reflector.Target{
-						Field: "Field1",
+					Target: &reflector.TargetField{
+						Name: "Field1",
 						Unmarshaler: unmarshal.UnmarshalerName{
 							Package: pkgUnmarshal,
 							Type:    stringUnmarshaler,
@@ -90,16 +90,16 @@ func TestReflector_Reflect(t *testing.T) {
 				},
 			},
 			"SUB1FIELD1": {
-				Target: &reflector.Target{
-					Field: "Subconfig1.Field1",
+				Field: &reflector.TargetField{
+					Name: "Subconfig1.Field1",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    stringUnmarshaler,
 					},
 				},
 				Condition: &reflector.ConditionRequireIf{
-					Target: &reflector.Target{
-						Field: "Field2",
+					Target: &reflector.TargetField{
+						Name: "Field2",
 						Unmarshaler: unmarshal.UnmarshalerName{
 							Package: pkgUnmarshal,
 							Type:    boolUnmarshaler,
@@ -109,16 +109,16 @@ func TestReflector_Reflect(t *testing.T) {
 				},
 			},
 			"SUB2_SUB2FIELD1": {
-				Target: &reflector.Target{
-					Field: "Subconfig2.Field1",
+				Field: &reflector.TargetField{
+					Name: "Subconfig2.Field1",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    stringUnmarshaler,
 					},
 				},
 				Condition: &reflector.ConditionRequireIf{
-					Target: &reflector.Target{
-						Field: "Field3",
+					Target: &reflector.TargetField{
+						Name: "Field3",
 						Unmarshaler: unmarshal.UnmarshalerName{
 							Package: pkgUnmarshal,
 							Type:    intUnmarshaler,
@@ -128,8 +128,8 @@ func TestReflector_Reflect(t *testing.T) {
 				},
 			},
 			"SUB2_SUB2FIELD2": {
-				Target: &reflector.Target{
-					Field: "Subconfig2.Field2",
+				Field: &reflector.TargetField{
+					Name: "Subconfig2.Field2",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    stringUnmarshaler,
@@ -138,8 +138,8 @@ func TestReflector_Reflect(t *testing.T) {
 				Condition: reflector.ConditionRequired(false),
 			},
 			"SUB2_SUB2FIELD3": {
-				Target: &reflector.Target{
-					Field: "Subconfig2.Field3",
+				Field: &reflector.TargetField{
+					Name: "Subconfig2.Field3",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgUnmarshal,
 						Type:    stringUnmarshaler,
@@ -147,8 +147,8 @@ func TestReflector_Reflect(t *testing.T) {
 				},
 				Condition: &reflector.ConditionRequireIfCombined{
 					First: &reflector.ConditionRequireIf{
-						Target: &reflector.Target{
-							Field: "Field3",
+						Target: &reflector.TargetField{
+							Name: "Field3",
 							Unmarshaler: unmarshal.UnmarshalerName{
 								Package: pkgUnmarshal,
 								Type:    intUnmarshaler,
@@ -160,8 +160,8 @@ func TestReflector_Reflect(t *testing.T) {
 				},
 			},
 			"SUB3": {
-				Target: &reflector.Target{
-					Field: "Subconfig3",
+				Field: &reflector.TargetField{
+					Name: "Subconfig3",
 					Unmarshaler: unmarshal.UnmarshalerName{
 						Package: pkgTest,
 						Type:    pkg1Unmarshaler,
@@ -176,4 +176,62 @@ func TestReflector_Reflect(t *testing.T) {
 	result, err := reflector.New().Reflect(conf)
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
+}
+
+func TestReflector_CombineConditions(t *testing.T) {
+	type L3 struct {
+		Str string `env:"STR"`
+	}
+
+	type L2 struct {
+		L3 *L3 `env:"L3_*"`
+	}
+
+	type L1 struct {
+		Foo string `env:"FOO,enum(bar,baz)"`
+		L2  *L2    `env:"L2_*,reqif(Foo=bar)"`
+	}
+
+	expect := &reflector.Result{
+		ConfigPkg:  "reflector_test",
+		ConfigType: "L1",
+		Packages: map[string]struct{}{
+			"github.com/albenik/huenv/unmarshal": {},
+		},
+		Envs: map[string]*reflector.Target{
+			"FOO": {
+				Field: &reflector.TargetField{
+					Name: "Foo",
+					Unmarshaler: unmarshal.UnmarshalerName{
+						Package: "github.com/albenik/huenv/unmarshal",
+						Type:    "String",
+					},
+				},
+				Condition: reflector.ConditionEnum{"bar", "baz"},
+			},
+			"L2_L3_STR": {
+				Field: &reflector.TargetField{
+					Name: "L2.L3.Str",
+					Unmarshaler: unmarshal.UnmarshalerName{
+						Package: "github.com/albenik/huenv/unmarshal",
+						Type:    "String",
+					},
+				},
+				Condition: &reflector.ConditionRequireIf{
+					Target: &reflector.TargetField{
+						Name: "Foo",
+						Unmarshaler: unmarshal.UnmarshalerName{
+							Package: "github.com/albenik/huenv/unmarshal",
+							Type:    "String",
+						},
+					},
+					ValueStr: "bar",
+				},
+			},
+		},
+	}
+
+	res, err := reflector.New().Reflect(new(L1))
+	require.NoError(t, err)
+	require.Equal(t, expect, res)
 }

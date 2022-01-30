@@ -33,6 +33,13 @@ func (t *Target) Unmarshal(s string) error {
 	return t.unmarshaler.Unmarshal(s)
 }
 
+func (t *Target) Dependency() interface{} {
+	if c, ok := t.condition.(*conditionRequireIf); ok {
+		return c.target
+	}
+	return nil
+}
+
 func NewTarget(t interface{}, u Unmarshaler, c Condition) *Target {
 	if err := u.SetTarget(t); err != nil {
 		panic(err)

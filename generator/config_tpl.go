@@ -89,37 +89,37 @@ func (g *ConfigGenerator) fillTemplateData(data *configTemplateData, info *refle
 	delete(info.Packages, unmarshalPkg)
 
 	pkgKeys := make([]string, 0, len(info.Packages))
-	for p := range info.Packages {
-		pkgKeys = append(pkgKeys, p)
+	for k := range info.Packages {
+		pkgKeys = append(pkgKeys, k)
 	}
 	sort.Strings(pkgKeys)
 
-	envKeys := make([]string, 0, len(info.Envs))
-	for e := range info.Envs {
-		envKeys = append(envKeys, e)
-	}
-	sort.Strings(envKeys)
-
-	data.Imports = make([]*configTemplateImport, 0, len(pkgKeys))
-	data.Envs = make([]*configTemplateTargetInfo, 0, len(envKeys))
-
 	g.importsAliases = make(map[string]string, len(pkgKeys))
-	for i, p := range pkgKeys {
-		alias := fmt.Sprintf("p%d", i+1)
-		g.importsAliases[p] = alias
+	data.Imports = make([]*configTemplateImport, 0, len(pkgKeys))
+	for i, k := range pkgKeys {
+		alias := fmt.Sprintf("_pkg%d", i+1)
+		g.importsAliases[k] = alias
 		data.Imports = append(data.Imports, &configTemplateImport{
 			Alias: alias,
-			Path:  p,
+			Path:  k,
 		})
 	}
 
-	for _, name := range envKeys {
-		e := info.Envs[name]
+	envKeys := make([]string, 0, len(info.Envs))
+	for k := range info.Envs {
+		envKeys = append(envKeys, k)
+	}
+	sort.Strings(envKeys)
+	envKeys = reflector.SortWithDeps(envKeys, info.Envs)
+
+	data.Envs = make([]*configTemplateTargetInfo, 0, len(envKeys))
+	for _, k := range envKeys {
+		e := info.Envs[k]
 		data.Envs = append(data.Envs, &configTemplateTargetInfo{
-			Env:         name,
-			Field:       e.Target.Field,
+			Env:         k,
+			Field:       e.Field.Name,
 			Condition:   e.Condition,
-			Unmarshaler: g.adaptUnmarshalerName(e.Target.Unmarshaler),
+			Unmarshaler: g.adaptUnmarshalerName(e.Field.Unmarshaler),
 		})
 	}
 
@@ -153,7 +153,7 @@ func (g *ConfigGenerator) printCondition(prefix string, condition interface{}) (
 		return fmt.Sprintf("_u.Enum(%s)", strings.Join(quoted, ",")), nil
 
 	case *reflector.ConditionRequireIf:
-		return fmt.Sprintf("_u.RequireIf(%s.%s, %q, new(%s))", prefix, c.Target.Field, c.ValueStr,
+		return fmt.Sprintf("_u.RequireIf(%s.%s, %q, new(%s))", prefix, c.Target.Name, c.ValueStr,
 			g.adaptUnmarshalerName(c.Target.Unmarshaler)), nil
 
 	case *reflector.ConditionRequireIfCombined:
@@ -172,8 +172,7 @@ func (g *ConfigGenerator) printCondition(prefix string, condition interface{}) (
 		return s1 + fmt.Sprintf(".And(%s)", s2), nil
 
 	default:
-		return fmt.Sprintf("unknown condition type %T", c), nil
-		// return "", fmt.Errorf("unknown condition type %T", c)
+		return "", fmt.Errorf("unknown condition type %T", c)
 	}
 
 }

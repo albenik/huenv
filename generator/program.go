@@ -161,7 +161,7 @@ func exec(out string) (outerr error) {
 		dst = file
 	}
 
-	info, err := reflector.New().Reflect((*config.{{ .ConfigType }})(nil))
+	info, err := reflector.New().Reflect(new(config.{{ .ConfigType }}))
 	if err != nil {
 		return err
 	}

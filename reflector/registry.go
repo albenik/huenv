@@ -85,7 +85,7 @@ func (r *unmarshalersRegistry) register(u unmarshal.Unmarshaler, strict bool) (u
 
 func (r unmarshalersRegistry) GetUnmarshaler(name unmarshal.UnmarshalerName) (unmarshal.Unmarshaler, error) {
 	if ut, ok := r.unmarshalers[name]; ok {
-		return newUnmarshalerFromType(ut), nil
+		return newValueOfType(ut).Interface().(unmarshal.Unmarshaler), nil
 	}
 	return nil, fmt.Errorf("unmarshaler %q is not registerd", name)
 }
@@ -95,16 +95,6 @@ func (r unmarshalersRegistry) FindUnmarshalerNameForType(t reflect.Type) (unmars
 		return name, true
 	}
 	return unmarshal.UnmarshalerName{}, false
-}
-
-func newUnmarshalerFromType(t reflect.Type) unmarshal.Unmarshaler {
-	var v reflect.Value
-	if t.Kind() == reflect.Ptr {
-		v = reflect.New(t.Elem())
-	} else {
-		v = reflect.Zero(t)
-	}
-	return v.Interface().(unmarshal.Unmarshaler)
 }
 
 func Register(u unmarshal.Unmarshaler) error {
