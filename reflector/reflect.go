@@ -212,9 +212,10 @@ func combineConditions(parent *ConditionRequireIf, current interface{}) interfac
 }
 
 func findUnmarshalerNameForField(field *reflect.StructField) (unmarshal.UnmarshalerName, bool) {
+	const maxPartsCount = 2
 	if explicit := field.Tag.Get(unmarshalerTagName); explicit != "" {
-		parts := strings.SplitN(explicit, " ", 2)
-		if len(parts) == 2 {
+		parts := strings.SplitN(explicit, " ", maxPartsCount)
+		if len(parts) == maxPartsCount {
 			return unmarshal.UnmarshalerName{Package: parts[0], Type: parts[1]}, true
 		}
 		return unmarshal.UnmarshalerName{Package: field.Type.PkgPath(), Type: parts[0]}, true

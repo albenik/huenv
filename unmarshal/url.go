@@ -5,7 +5,7 @@ import (
 )
 
 type URL struct {
-	target    **url.URL
+	target **url.URL
 }
 
 func (u *URL) SetTarget(i interface{}) error {

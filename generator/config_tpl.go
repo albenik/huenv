@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 
+	"github.com/albenik/huenv/internal/version"
 	"github.com/albenik/huenv/reflector"
 	"github.com/albenik/huenv/unmarshal"
 )
@@ -52,13 +52,8 @@ type ConfigGenerator struct {
 func (g *ConfigGenerator) Generate(dst io.Writer, info *reflector.Result) error {
 	buf := new(bytes.Buffer)
 
-	ver := "undefined"
-	if build, ok := debug.ReadBuildInfo(); ok {
-		ver = build.Main.Version
-	}
-
 	data := &configTemplateData{
-		GeneratorVersion: ver,
+		GeneratorVersion: version.String(),
 		Package:          info.ConfigPkg,
 		ConfigType:       info.ConfigType,
 		Imports:          nil,
@@ -141,9 +136,8 @@ func (g *ConfigGenerator) printCondition(prefix string, condition interface{}) (
 	case reflector.ConditionRequired:
 		if c {
 			return "_u.Required()", nil
-		} else {
-			return "_u.Optional()", nil
 		}
+		return "_u.Optional()", nil
 
 	case reflector.ConditionEnum:
 		quoted := make([]string, 0, len(c))
@@ -174,7 +168,6 @@ func (g *ConfigGenerator) printCondition(prefix string, condition interface{}) (
 	default:
 		return "", fmt.Errorf("unknown condition type %T", c)
 	}
-
 }
 
 func (g *ConfigGenerator) configTemplate() *template.Template {

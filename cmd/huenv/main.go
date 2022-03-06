@@ -8,40 +8,47 @@ import (
 	"strings"
 
 	"github.com/albenik/huenv/generator"
+	"github.com/albenik/huenv/internal/version"
 )
 
 func main() {
-	f := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	f.Usage = func() {
+	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	fs.Usage = func() {
 		w := os.Stderr
 		fmt.Fprintln(w, "usage: huenv [flags] <package> <type>")
 		fmt.Fprintln(w, "flags:")
-		f.PrintDefaults()
+		fs.PrintDefaults()
 	}
 
-	out := f.String("out", "", "Destination file. Defaults to stdout.")
-	codeOnly := f.Bool("code_only", false, "Only generate the reflection program, write it to stdout and exit.")
-	buildFlagsStr := f.String("build_flags", "", "Additional flags for go build.")
+	ver := fs.Bool("version", false, "Display version")
+	out := fs.String("out", "", "Destination file. Defaults to stdout.")
+	codeOnly := fs.Bool("code_only", false, "Only generate the reflection program, write it to stdout and exit.")
+	buildFlagsStr := fs.String("build_flags", "", "Additional flags for go build.")
 
-	if err := f.Parse(os.Args[1:]); err != nil {
-		f.Usage()
-		printErrorAndExit(err, 2)
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		fs.Usage()
+		printErrorAndExit(err, 2) //nolint:gomnd
 	}
 
-	if f.NArg() != 2 {
-		f.Usage()
-		os.Exit(2)
+	if *ver {
+		fmt.Fprintln(os.Stdout, version.String())
+		return
 	}
 
-	srcPackage := f.Arg(0)
-	srcType := f.Arg(1)
+	if fs.NArg() != 2 { //nolint:gomnd
+		fs.Usage()
+		os.Exit(2) //nolint:gomnd
+	}
+
+	srcPackage := fs.Arg(0)
+	srcType := fs.Arg(1)
 
 	if *codeOnly {
 		src, err := generator.GenerateProgram(srcPackage, srcType)
 		if err != nil {
 			printErrorAndExit(err, 1)
 		}
-		fmt.Println(src)
+		fmt.Fprintln(os.Stdout, src)
 		return
 	}
 

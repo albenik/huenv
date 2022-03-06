@@ -35,7 +35,7 @@ func BuildAndRun(dst, cfgPkg, cfgType string, buildFlags []string) (outerr error
 		}
 	}()
 
-	var binFilename = "huenv"
+	binFilename := "huenv"
 	if runtime.GOOS == "windows" {
 		binFilename += ".exe"
 	} else {
@@ -46,7 +46,7 @@ func BuildAndRun(dst, cfgPkg, cfgType string, buildFlags []string) (outerr error
 		return fmt.Errorf("build: %w", err)
 	}
 
-	cmdArgs := make([]string, 0, 2)
+	cmdArgs := make([]string, 0)
 	if dst != "" {
 		cmdArgs = append(cmdArgs, "-out", dst)
 		defer func() {
@@ -55,7 +55,7 @@ func BuildAndRun(dst, cfgPkg, cfgType string, buildFlags []string) (outerr error
 			}
 		}()
 	}
-	cmd := exec.Command(filepath.Join(tmpDir, binFilename), cmdArgs...)
+	cmd := exec.Command(filepath.Join(tmpDir, binFilename), cmdArgs...) //nolint:gosec
 	cmd.Stdout = os.Stdout
 	if err = runCmd(cmd); err != nil {
 		return fmt.Errorf("exec: %w", &CmdError{err})

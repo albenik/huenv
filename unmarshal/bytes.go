@@ -5,7 +5,7 @@ import (
 )
 
 type Bytes struct {
-	target    *[]byte
+	target *[]byte
 }
 
 func (u *Bytes) SetTarget(t interface{}) error {

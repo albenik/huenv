@@ -11,7 +11,7 @@ import (
 
 var registry *unmarshalersRegistry
 
-func init() {
+func init() { //nolint:gochecknoinits
 	r := &unmarshalersRegistry{
 		unmarshalers: make(map[unmarshal.UnmarshalerName]reflect.Type),
 		defaults:     make(map[reflect.Type]unmarshal.UnmarshalerName),
@@ -85,9 +85,12 @@ func (r *unmarshalersRegistry) register(u unmarshal.Unmarshaler, strict bool) (u
 
 func (r unmarshalersRegistry) GetUnmarshaler(name unmarshal.UnmarshalerName) (unmarshal.Unmarshaler, error) {
 	if ut, ok := r.unmarshalers[name]; ok {
-		return newValueOfType(ut).Interface().(unmarshal.Unmarshaler), nil
+		if um, ok := newValueOfType(ut).Interface().(unmarshal.Unmarshaler); ok {
+			return um, nil
+		}
+		return nil, fmt.Errorf("not an unmarshaler type %s", ut)
 	}
-	return nil, fmt.Errorf("unmarshaler %q is not registerd", name)
+	return nil, fmt.Errorf("unmarshaler %q is not registered", name)
 }
 
 func (r unmarshalersRegistry) FindUnmarshalerNameForType(t reflect.Type) (unmarshal.UnmarshalerName, bool) {

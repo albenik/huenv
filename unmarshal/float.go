@@ -5,7 +5,7 @@ import (
 )
 
 type Float32 struct {
-	target    *float32
+	target *float32
 }
 
 func (u *Float32) SetTarget(i interface{}) error {
@@ -27,7 +27,7 @@ func (u *Float32) Unmarshal(str string) error {
 }
 
 type Float64 struct {
-	target    *float64
+	target *float64
 }
 
 func (u *Float64) SetTarget(i interface{}) error {

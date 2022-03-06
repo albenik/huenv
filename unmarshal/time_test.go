@@ -19,8 +19,8 @@ func TestTime_Unmarshal(t *testing.T) {
 
 	testCases := []*testCase{{
 		Name:   "Valid",
-		Input:  time.Date(2022, time.January, 01, 12, 30, 0, 0, time.UTC).Format(time.RFC3339),
-		Result: time.Date(2022, time.January, 01, 12, 30, 0, 0, time.UTC),
+		Input:  time.Date(2022, time.January, 1, 12, 30, 0, 0, time.UTC).Format(time.RFC3339),
+		Result: time.Date(2022, time.January, 1, 12, 30, 0, 0, time.UTC),
 	}, {
 		Name:      "Invalid",
 		Input:     "invalid",

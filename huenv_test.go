@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"os/exec"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,15 +63,16 @@ func TestEnvconfig_Init(t *testing.T) {
 		}, conf)
 	})
 
-	t.Run("Errors", func(t *testing.T) {
-		type testConf struct {
-			FieldBool     bool
-			FieldBytes    []byte
-			FieldDuration time.Duration
-			FieldTime     time.Time
-			FieldString   string
-		}
-	})
+	// TODO Implement errors tests
+	// t.Run("Errors", func(t *testing.T) {
+	// 	type testConf struct {
+	// 		FieldBool     bool
+	// 		FieldBytes    []byte
+	// 		FieldDuration time.Duration
+	// 		FieldTime     time.Time
+	// 		FieldString   string
+	// 	}
+	// })
 }
 
 func TestGenerator(t *testing.T) {

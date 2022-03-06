@@ -4,6 +4,7 @@ import (
 	"strconv"
 )
 
+//nolint:gomnd
 const intSize = 32 << (^uint(0) >> 63) // 32 or 64
 
 type Int struct {
