@@ -1,6 +1,6 @@
 # EnvConfig for Humans & Robots
 
-[![CI](https://github.com/albenik/huenv/actions/workflows/main.yml/badge.svg)](https://github.com/albenik/huenv/actions/workflows/main.yml)
+[![CI](https://github.com/albenik/huenv/actions/workflows/main.yaml/badge.svg)](https://github.com/albenik/huenv/actions/workflows/main.yaml)
 
 The main goal — is the clear information about all configuration in one place
 
