@@ -34,6 +34,7 @@ func init() { //nolint:gochecknoinits
 	must(r.RegisterForType(time.Duration(0), (*unmarshal.Duration)(nil)))
 	must(r.RegisterForType((*url.URL)(nil), (*unmarshal.URL)(nil)))
 	must(r.RegisterForType(([]byte)(nil), (*unmarshal.Bytes)(nil)))
+	must(r.RegisterForType(([]string)(nil), (*unmarshal.StringsSlice)(nil)))
 	registry = r
 }
 

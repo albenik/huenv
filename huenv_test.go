@@ -20,6 +20,7 @@ type TestConfig struct {
 	String         string        `env:"ENV_STRING"`
 	StringEnum     string        `env:"ENV_STRING_ENUM,enum(foo,bar,baz)"`
 	StringOptional string        `env:"ENV_STRING_OPT,optional"`
+	StringsSlice   []string      `env:"ENV_STRINGS_SLICE"`
 	L2             *TestConfigL2 `env:"L2_*"`
 }
 
@@ -31,12 +32,13 @@ func (c *TestConfig) Envmap() map[string]*unmarshal.Target {
 	to := unmarshal.NewTarget
 
 	return map[string]*unmarshal.Target{
-		"ENV_BOOL":        to(&c.Bool, new(unmarshal.Bool), unmarshal.Required()),
-		"ENV_BOOL_OPT":    to(&c.BoolOpt, new(unmarshal.Bool), unmarshal.Optional()),
-		"ENV_STRING":      to(&c.String, new(unmarshal.String), unmarshal.Required()),
-		"ENV_STRING_ENUM": to(&c.StringEnum, new(unmarshal.String), unmarshal.Enum("foo", "bar")),
-		"ENV_STRING_OPT":  to(&c.StringOptional, new(unmarshal.String), unmarshal.Optional()),
-		"L2_INT":          to(&c.L2.IntField, new(unmarshal.Int64), unmarshal.Required()),
+		"ENV_BOOL":          to(&c.Bool, new(unmarshal.Bool), unmarshal.Required()),
+		"ENV_BOOL_OPT":      to(&c.BoolOpt, new(unmarshal.Bool), unmarshal.Optional()),
+		"ENV_STRING":        to(&c.String, new(unmarshal.String), unmarshal.Required()),
+		"ENV_STRING_ENUM":   to(&c.StringEnum, new(unmarshal.String), unmarshal.Enum("foo", "bar")),
+		"ENV_STRING_OPT":    to(&c.StringOptional, new(unmarshal.String), unmarshal.Optional()),
+		"ENV_STRINGS_SLICE": to(&c.StringsSlice, new(unmarshal.StringsSlice), unmarshal.Required()),
+		"L2_INT":            to(&c.L2.IntField, new(unmarshal.Int64), unmarshal.Required()),
 	}
 }
 
@@ -45,6 +47,7 @@ func TestEnvconfig_Init(t *testing.T) {
 		t.Setenv("ENV_BOOL", "true")
 		t.Setenv("ENV_STRING", "foo")
 		t.Setenv("ENV_STRING_ENUM", "bar")
+		t.Setenv("ENV_STRINGS_SLICE", "foo,bar,baz")
 		t.Setenv("L2_INT", "777")
 
 		conf := new(TestConfig)
@@ -57,6 +60,7 @@ func TestEnvconfig_Init(t *testing.T) {
 			String:         "foo",
 			StringEnum:     "bar",
 			StringOptional: "",
+			StringsSlice:   []string{"foo", "bar", "baz"},
 			L2: &TestConfigL2{
 				IntField: 777,
 			},

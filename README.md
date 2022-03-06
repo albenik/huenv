@@ -11,7 +11,7 @@ config.go:
 
 package config
 
-//go:generate go run github.com/albenik/huenv/cmd/huenv -out confg_unmarshal.go example.com/project/name/config Config
+//go:generate go run github.com/albenik/huenv/cmd/huenv@latest -out confg_unmarshal.go example.com/project/name/config Config
 
 type Config struct {
   ...
