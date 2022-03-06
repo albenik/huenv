@@ -21,19 +21,19 @@ import (
 	_u "github.com/albenik/huenv/unmarshal"
 )
 
-var _to = _u.NewTarget
-
 func (c *TestConfig) Envmap() map[string]*_u.Target {
+	to := _u.NewTarget
+
 	return map[string]*_u.Target{
-		"ENV_ZZZ":              _to(&c.Foo.Bar.Baz, new(_u.String), _u.Required()),
-		"ENV_AAA":              _to(&c.Foo.Aaa, new(_u.String), _u.RequireIf(&c.Foo.Bar.Baz, "zzz", new(_u.String))),
-		"ENV_BOOL":             _to(&c.Bool, new(_u.Bool), _u.Required()),
-		"ENV_BOOL_DEP_B":       _to(&c.BoolDepB, new(_u.Bool), _u.RequireIf(&c.Bool, "true", new(_u.Bool))),
-		"ENV_STRING":           _to(&c.String, new(_u.String), _u.Required()),
-		"ENV_BOOL_DEP_S":       _to(&c.BoolDepS, new(_u.Bool), _u.RequireIf(&c.String, "foo", new(_u.String))),
-		"ENV_BOOL_OPT":         _to(&c.BoolOpt, new(_u.Bool), _u.Optional()),
-		"ENV_CCC":              _to(&c.Ccc, new(_u.String), _u.RequireIf(&c.String, "foo", new(_u.String)).And(_u.Enum("foo", "bar", "baz"))),
-		"ENV_VERY_LOOOOOOOONG": _to(&c.URL, new(_u.URL), _u.Required()),
+		"ENV_ZZZ":              to(&c.Foo.Bar.Baz, new(_u.String), _u.Required()),
+		"ENV_AAA":              to(&c.Foo.Aaa, new(_u.String), _u.RequireIf(&c.Foo.Bar.Baz, "zzz", new(_u.String))),
+		"ENV_BOOL":             to(&c.Bool, new(_u.Bool), _u.Required()),
+		"ENV_BOOL_DEP_B":       to(&c.BoolDepB, new(_u.Bool), _u.RequireIf(&c.Bool, "true", new(_u.Bool))),
+		"ENV_STRING":           to(&c.String, new(_u.String), _u.Required()),
+		"ENV_BOOL_DEP_S":       to(&c.BoolDepS, new(_u.Bool), _u.RequireIf(&c.String, "foo", new(_u.String))),
+		"ENV_BOOL_OPT":         to(&c.BoolOpt, new(_u.Bool), _u.Optional()),
+		"ENV_CCC":              to(&c.Ccc, new(_u.String), _u.RequireIf(&c.String, "foo", new(_u.String)).And(_u.Enum("foo", "bar", "baz"))),
+		"ENV_VERY_LOOOOOOOONG": to(&c.URL, new(_u.URL), _u.Required()),
 	}
 }
 `

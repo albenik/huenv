@@ -191,12 +191,12 @@ import (
 	_u "github.com/albenik/huenv/unmarshal"
 )
 
-var _to = _u.NewTarget
-
 func (c *{{ .ConfigType }}) Envmap() map[string]*_u.Target {
+	to := _u.NewTarget
+
 	return map[string]*_u.Target{
 	{{- range .Envs }}
-		"{{ .Env }}": _to(&c.{{ .Field }}, new({{ .Unmarshaler }}), {{ printCondition "&c" .Condition }}),
+		"{{ .Env }}": to(&c.{{ .Field }}, new({{ .Unmarshaler }}), {{ printCondition "&c" .Condition }}),
 	{{- end }}
 	}
 }
