@@ -7,9 +7,9 @@ import (
 
 const (
 	Major      = 0
-	Minor      = 0
-	Patch      = 2
-	PreRelease = "devel"
+	Minor      = 1
+	Patch      = 0
+	PreRelease = ""
 )
 
 // String formats the version string for this module in semver format.
